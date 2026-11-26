@@ -1,0 +1,6 @@
+# Optional alternative to environment variables.
+# Copy to backend/application-local.yml (git-ignored) and fill in.
+spring:
+  datasource:
+    username: roamstead_app
+    password: change-me

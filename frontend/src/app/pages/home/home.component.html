@@ -1,0 +1,179 @@
+<!-- ===== Split hero ===== -->
+<section class="hero">
+  <div class="wrap hero__grid">
+    <div class="hero__copy">
+      <span class="eyebrow">Stays across India &middot; booked in a minute</span>
+      <h1 class="hero__title">Go further.<br>Stay somewhere <mark>worth it.</mark></h1>
+      <p class="hero__lead">Haveli courtyards in Jaipur, cedar cabins in Manali, lantern-lit cottages on the
+        Kerala backwaters. Live availability for your exact dates, and the full price before you book.</p>
+
+      <ul class="hero__stats">
+        <li><b>{{ hotels().length || '–' }}</b><span>handpicked stays</span></li>
+        <li><b>{{ stateCount() || '–' }}</b><span>states to roam</span></li>
+        <li><b>{{ fromPrice() ? (fromPrice() | inr) : '–' }}</b><span>nights from</span></li>
+      </ul>
+    </div>
+
+    <div class="hero__stage">
+      <div class="hero__frame">
+        @for (slide of slides(); track slide.id; let i = $index) {
+          <div class="hero__slide" [class.is-active]="i === active()">
+            <img [src]="slide.coverImage" [alt]="slide.name" rsFallback=" " />
+          </div>
+        }
+        @if (loading()) { <div class="hero__slide is-active skeleton"></div> }
+        <span class="hero__sticker" aria-hidden="true">Live<br>rooms</span>
+      </div>
+
+      @if (current(); as c) {
+        <div class="hero__bar">
+          <a class="hero__bar-info" [routerLink]="['/hotels', c.id]">
+            <span class="hero__bar-count">{{ pad(active() + 1) }} / {{ pad(slides().length) }}</span>
+            <strong>{{ c.name }}</strong>
+            <span>{{ c.city }}, {{ c.region }} &middot; {{ c.pricePerNight | inr }}/night</span>
+          </a>
+          <div class="hero__bar-arrows">
+            <button type="button" (click)="prev()" aria-label="Previous stay">&larr;</button>
+            <button type="button" (click)="next()" aria-label="Next stay">&rarr;</button>
+          </div>
+          @for (t of [tick()]; track t) {
+            <span class="hero__progress" [style.animation-duration.ms]="slideMs"></span>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="wrap hero__search">
+    <rs-search-bar></rs-search-bar>
+  </div>
+</section>
+
+<!-- ===== City marquee ===== -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track">
+    @for (n of [1, 2]; track n) {
+      @for (d of destinations(); track d.city) {
+        <span>{{ d.city }}</span><i>&#10022;</i>
+      }
+      @if (!destinations().length) {
+        <span>Jaipur</span><i>&#10022;</i><span>Goa</span><i>&#10022;</i><span>Manali</span><i>&#10022;</i>
+      }
+    }
+  </div>
+</div>
+
+@if (loadError()) {
+  <div class="wrap"><p class="notice notice--error load-error">{{ loadError() }}</p></div>
+}
+
+<!-- ===== Destinations rail ===== -->
+<section class="section">
+  <div class="wrap">
+    <rs-rail itemWidth="23.5%">
+      <div railTitle rsReveal>
+        <span class="eyebrow">Where to next</span>
+        <h2>Pick a place.<br>We'll find the room.</h2>
+      </div>
+      @if (loading()) {
+        @for (n of [1, 2, 3, 4]; track n) { <div class="dest dest--skeleton skeleton"></div> }
+      }
+      @for (d of destinations(); track d.city; let i = $index) {
+        <a class="dest" routerLink="/hotels" [queryParams]="{ location: d.city }">
+          <div class="dest__media">
+            <img [src]="d.image" [alt]="d.city" [rsFallback]="d.city" loading="lazy" />
+            <span class="dest__num">{{ pad(i + 1) }}</span>
+          </div>
+          <div class="dest__label">
+            <strong>{{ d.city }}</strong>
+            <span>{{ d.region }}</span>
+            <span class="dest__from">from {{ d.fromPrice | inr }} &rarr;</span>
+          </div>
+        </a>
+      }
+    </rs-rail>
+  </div>
+</section>
+
+<!-- ===== Featured stays rail ===== -->
+<section class="section section--paper">
+  <div class="wrap">
+    <rs-rail>
+      <div railTitle rsReveal>
+        <span class="eyebrow">Featured stays</span>
+        <h2>Rooms people<br>rebook every year</h2>
+      </div>
+      @if (loading()) {
+        @for (n of [1, 2, 3]; track n) { <div class="card-skeleton skeleton"></div> }
+      }
+      @for (hotel of hotels(); track hotel.id) {
+        <rs-hotel-card [hotel]="hotel"></rs-hotel-card>
+      }
+    </rs-rail>
+  </div>
+</section>
+
+<!-- ===== How it works ===== -->
+<section class="section">
+  <div class="wrap">
+    <div class="how">
+      <div class="how__intro" rsReveal>
+        <span class="eyebrow">How it works</span>
+        <h2>Three moves.<br>Zero surprises.</h2>
+        <p class="muted">No hidden fees, no "price on request". What the booking panel shows is what you pay at the hotel.</p>
+      </div>
+      <ol class="how__steps">
+        <li rsReveal [revealDelay]="0">
+          <span class="how__num">1</span>
+          <div>
+            <h3>Search your dates</h3>
+            <p class="muted">Only stays with a room free on every night of your trip are marked available.</p>
+          </div>
+        </li>
+        <li rsReveal [revealDelay]="120">
+          <span class="how__num">2</span>
+          <div>
+            <h3>See the full price</h3>
+            <p class="muted">Nightly rate &times; nights, calculated by us before you confirm.</p>
+          </div>
+        </li>
+        <li rsReveal [revealDelay]="240">
+          <span class="how__num">3</span>
+          <div>
+            <h3>Keep your reference</h3>
+            <p class="muted">Instant confirmation. Look it up or cancel any time before check-in day.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Flex Dates band ===== -->
+<section class="section section--forest flex-band">
+  <div class="wrap flex-band__grid">
+    <div rsReveal>
+      <span class="eyebrow">Flex Dates</span>
+      <h2>Sold out? Slide a day, keep the trip.</h2>
+      <p>Every stay shows a live night-by-night calendar of rooms left. If your dates are full, Roamstead
+        lines up the nearest stays of the same length that still have a room, with the exact price.</p>
+      <a routerLink="/hotels" class="btn btn--primary">Try it on any stay</a>
+    </div>
+    <div class="flex-band__preview" rsReveal [revealDelay]="150" aria-hidden="true">
+      <div class="mini-cal">
+        @for (n of sampleNights; track $index) {
+          <span class="mini-cal__cell"
+                [class.mini-cal__cell--out]="n === 0"
+                [class.mini-cal__cell--low]="n === 1"
+                [style.animation-delay.ms]="$index * 70">
+            <small>{{ $index + 1 }}</small>{{ n === 0 ? 'Full' : n + ' left' }}
+          </span>
+        }
+      </div>
+      <div class="mini-suggest">
+        <span class="badge badge--ok">2 days later</span>
+        <span>6 &ndash; 8 &middot; 3 rooms left</span>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,121 @@
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Almost there</span>
+    <h1>Book your stay</h1>
+    <ol class="steps" aria-label="Booking progress">
+      <li [class.is-active]="step() === 1" [class.is-done]="step() > 1"><span>1</span> Guest details</li>
+      <li [class.is-active]="step() === 2"><span>2</span> Review &amp; confirm</li>
+      <li><span>3</span> Confirmation</li>
+    </ol>
+  </div>
+</section>
+
+<section class="wrap booking">
+  @if (loading()) {
+    <div class="loading"><span class="spinner"></span> Getting your price&hellip;</div>
+  }
+
+  @if (fatal()) {
+    <div class="fatal">
+      <p class="notice notice--error">{{ fatal() }}</p>
+      <a class="btn btn--dark" [routerLink]="hotelId() ? ['/hotels', hotelId()] : ['/hotels']">Back to the hotel</a>
+    </div>
+  }
+
+  @if (quote(); as q) {
+    <div class="booking__grid">
+      <div class="booking__main">
+        @if (submitError(); as e) {
+          <div class="notice notice--error">
+            <div>
+              <strong>{{ e.code === 'ROOM_UNAVAILABLE' ? 'This room was just taken' : 'We could not complete the booking' }}</strong>
+              <p class="notice__msg">{{ e.message }}</p>
+              @if (e.code === 'ROOM_UNAVAILABLE') {
+                <a class="btn btn--outline" [routerLink]="['/hotels', q.hotelId]"
+                   [queryParams]="{ checkIn: q.checkIn, checkOut: q.checkOut }" fragment="flex">See nearby dates</a>
+              }
+            </div>
+          </div>
+        }
+
+        @if (step() === 1) {
+          <form class="pane" [formGroup]="form" (ngSubmit)="toReview()" novalidate>
+            <h2>Who's staying?</h2>
+            <p class="muted">We'll send the confirmation to this email. You'll also need it to find or cancel the booking.</p>
+
+            <div class="field">
+              <label for="g-name">Full name</label>
+              <input id="g-name" class="input" type="text" formControlName="guestName" autocomplete="name"
+                     placeholder="e.g. Ananya Sharma" [class.is-invalid]="fieldError('guestName')"
+                     (input)="clearServerError('guestName')" />
+              @if (fieldError('guestName')) { <span class="field-error">{{ fieldError('guestName') }}</span> }
+            </div>
+
+            <div class="field">
+              <label for="g-email">Email address</label>
+              <input id="g-email" class="input" type="email" formControlName="guestEmail" autocomplete="email"
+                     placeholder="name@example.com" [class.is-invalid]="fieldError('guestEmail')"
+                     (input)="clearServerError('guestEmail')" />
+              @if (fieldError('guestEmail')) { <span class="field-error">{{ fieldError('guestEmail') }}</span> }
+            </div>
+
+            <div class="pane__actions">
+              <a class="btn btn--outline" [routerLink]="['/hotels', q.hotelId]"
+                 [queryParams]="{ checkIn: q.checkIn, checkOut: q.checkOut }">Change dates</a>
+              <button class="btn btn--primary" type="submit" [disabled]="!q.available">Review booking &rarr;</button>
+            </div>
+          </form>
+        }
+
+        @if (step() === 2) {
+          <div class="pane">
+            <h2>Check the details</h2>
+            <dl class="review">
+              <div><dt>Guest</dt><dd>{{ form.value.guestName }}</dd></div>
+              <div><dt>Email</dt><dd>{{ form.value.guestEmail }}</dd></div>
+              <div><dt>Hotel</dt><dd>{{ q.hotelName }}</dd></div>
+              <div><dt>Room</dt><dd>{{ q.roomTypeName }} &middot; 1 room</dd></div>
+              <div><dt>Check-in</dt><dd>{{ q.checkIn | date: 'EEEE, d MMMM y' }} &middot; from 2 PM</dd></div>
+              <div><dt>Check-out</dt><dd>{{ q.checkOut | date: 'EEEE, d MMMM y' }} &middot; by 11 AM</dd></div>
+            </dl>
+            <div class="total">
+              <div>
+                <span class="total__label">Total to pay at the hotel</span>
+                <span class="muted">{{ q.pricePerNight | inr }} &times; {{ q.nights }} night{{ q.nights === 1 ? '' : 's' }}</span>
+              </div>
+              <span class="total__amount">{{ q.totalAmount | inr }}</span>
+            </div>
+            <div class="pane__actions">
+              <button class="btn btn--outline" type="button" (click)="step.set(1)" [disabled]="submitting()">&larr; Edit details</button>
+              <button class="btn btn--primary" type="button" (click)="confirm()" [disabled]="submitting() || !q.available">
+                @if (submitting()) { <span class="spinner"></span> Confirming&hellip; } @else { Confirm booking }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <aside class="summary">
+        @if (hotel(); as h) {
+          <div class="summary__media">
+            <img [src]="h.coverImage" [alt]="h.name" [rsFallback]="h.name" />
+          </div>
+        }
+        <div class="summary__body">
+          <h3>{{ q.hotelName }}</h3>
+          <p class="muted">{{ q.roomTypeName }}</p>
+          <div class="summary__dates">
+            <div><span>Check-in</span><b>{{ q.checkIn | date: 'EEE d MMM' }}</b></div>
+            <div class="summary__nights">{{ q.nights }}<small>night{{ q.nights === 1 ? '' : 's' }}</small></div>
+            <div><span>Check-out</span><b>{{ q.checkOut | date: 'EEE d MMM' }}</b></div>
+          </div>
+          <div class="summary__row"><span>{{ q.pricePerNight | inr }} &times; {{ q.nights }}</span><span>{{ q.totalAmount | inr }}</span></div>
+          <div class="summary__total"><span>Total</span><span>{{ q.totalAmount | inr }}</span></div>
+          @if (q.available && q.availableRooms <= 2) {
+            <p class="summary__hurry">Only {{ q.availableRooms }} left for these nights</p>
+          }
+        </div>
+      </aside>
+    </div>
+  }
+</section>

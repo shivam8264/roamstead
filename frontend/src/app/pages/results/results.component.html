@@ -1,0 +1,99 @@
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Find a stay</span>
+    <h1>{{ location() ? 'Stays in ' + location() : 'All stays' }}</h1>
+    <rs-search-bar [location]="location()" [checkIn]="checkIn()" [checkOut]="checkOut()" [compact]="true">
+    </rs-search-bar>
+  </div>
+</section>
+
+<section class="wrap results">
+  <div class="toolbar">
+    <p class="toolbar__count">
+      @if (!loading()) {
+        <b>{{ visible().length }}</b> {{ visible().length === 1 ? 'stay' : 'stays' }}
+        @if (hasDates()) { <span class="muted">for your dates</span> }
+        @else { <span class="muted">&middot; add dates to see rooms left and total price</span> }
+      }
+    </p>
+    <div class="toolbar__controls">
+      @if (hasDates()) {
+        <label class="toggle">
+          <input type="checkbox" [ngModel]="onlyAvailable()" (ngModelChange)="onlyAvailable.set($event)" />
+          <span class="toggle__box"></span> Available only
+        </label>
+      }
+      <select class="input select" [ngModel]="sort()" (ngModelChange)="sort.set($event)" aria-label="Sort stays">
+        <option value="recommended">Recommended</option>
+        <option value="price-asc">Price: low to high</option>
+        <option value="price-desc">Price: high to low</option>
+        <option value="rating">Star rating</option>
+      </select>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="notice notice--error">
+      <span>{{ error()!.message }}</span>
+      <button class="btn btn--outline retry" type="button" (click)="load()">Try again</button>
+    </div>
+  }
+
+  @if (loading()) {
+    @for (n of [1, 2, 3]; track n) {
+      <div class="row row--skeleton">
+        <div class="skeleton row__media"></div>
+        <div class="row__body"><div class="skeleton line"></div><div class="skeleton line short"></div></div>
+      </div>
+    }
+  }
+
+  @if (!loading() && !error() && visible().length === 0) {
+    <div class="empty">
+      <h3>No stays match that search</h3>
+      <p class="muted">Try a broader place like "Rajasthan", or clear the dates to browse everything.</p>
+      <a routerLink="/hotels" class="btn btn--dark">Show all stays</a>
+    </div>
+  }
+
+  @for (h of visible(); track h.id; let i = $index) {
+    <article class="row" [class.row--soldout]="hasDates() && h.availableRooms === 0"
+             [style.animation-delay.ms]="i * 90">
+      <a class="row__media" [routerLink]="['/hotels', h.id]" [queryParams]="dateParams()">
+        <img [src]="h.coverImage" [alt]="h.name" [rsFallback]="h.name" loading="lazy" />
+        <span class="row__city">{{ h.city }}, {{ h.region }}</span>
+      </a>
+
+      <div class="row__body">
+        <span class="stars">{{ stars(h.starRating) }}</span>
+        <h3><a [routerLink]="['/hotels', h.id]" [queryParams]="dateParams()">{{ h.name }}</a></h3>
+        <p class="muted">{{ h.tagline }}</p>
+        <ul class="chips">
+          @for (a of h.amenities.slice(0, 4); track a) { <li>{{ a }}</li> }
+          @if (h.amenities.length > 4) { <li class="chips__more">+{{ h.amenities.length - 4 }}</li> }
+        </ul>
+        <p class="row__room">{{ h.roomTypeName }}</p>
+      </div>
+
+      <div class="row__aside">
+        @if (hasDates()) {
+          <span class="badge {{ availabilityLabel(h).css }}">{{ availabilityLabel(h).text }}</span>
+        }
+        <div class="price">
+          <span class="price__night">{{ h.pricePerNight | inr }}</span>
+          <span class="muted">per night</span>
+          @if (h.stayTotal !== null && h.nights) {
+            <span class="price__total">{{ h.stayTotal | inr }} for {{ h.nights }} night{{ h.nights === 1 ? '' : 's' }}</span>
+          }
+        </div>
+        @if (hasDates() && h.availableRooms === 0) {
+          <a class="btn btn--outline btn--block" [routerLink]="['/hotels', h.id]" [queryParams]="dateParams()"
+             fragment="flex">See nearby dates</a>
+        } @else {
+          <a class="btn btn--primary btn--block" [routerLink]="['/hotels', h.id]" [queryParams]="dateParams()">
+            View stay</a>
+        }
+      </div>
+    </article>
+  }
+</section>

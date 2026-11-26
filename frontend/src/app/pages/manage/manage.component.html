@@ -1,0 +1,90 @@
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Your booking</span>
+    <h1>Find or cancel a booking</h1>
+    <p class="muted">Enter the reference from your confirmation and the email you booked with.</p>
+  </div>
+</section>
+
+<section class="wrap manage">
+  <form class="lookup" [formGroup]="form" (ngSubmit)="find()" novalidate>
+    <div class="field">
+      <label for="m-ref">Booking reference</label>
+      <input id="m-ref" class="input ref-input" type="text" formControlName="reference" placeholder="RS-XXXXXXXX"
+             autocomplete="off" [class.is-invalid]="invalid('reference')" />
+      @if (invalid('reference')) {
+        <span class="field-error">References look like RS-K7Q4M9PX.</span>
+      }
+    </div>
+    <div class="field">
+      <label for="m-email">Email</label>
+      <input id="m-email" class="input" type="email" formControlName="email" placeholder="name@example.com"
+             autocomplete="email" [class.is-invalid]="invalid('email')" />
+      @if (invalid('email')) {
+        <span class="field-error">Enter the email you used when booking.</span>
+      }
+    </div>
+    <button class="btn btn--dark" type="submit" [disabled]="searching()">
+      @if (searching()) { <span class="spinner"></span> Searching&hellip; } @else { Find booking }
+    </button>
+  </form>
+
+  @if (error()) {
+    <p class="notice notice--error">{{ error()!.message }}</p>
+  }
+
+  @if (justCancelled()) {
+    <p class="notice notice--success">Your booking has been cancelled and the room released. Nothing more to do.</p>
+  }
+
+  @if (booking(); as b) {
+    <article class="result" [class.result--cancelled]="b.status === 'CANCELLED'">
+      <div class="result__media">
+        <img [src]="b.coverImage" [alt]="b.hotelName" [rsFallback]="b.hotelName" />
+        <span class="result__status" [class.is-cancelled]="b.status === 'CANCELLED'">
+          {{ b.status === 'CANCELLED' ? 'Cancelled' : 'Confirmed' }}
+        </span>
+      </div>
+      <div class="result__body">
+        <span class="result__ref">{{ b.reference }}</span>
+        <h2>{{ b.hotelName }}</h2>
+        <p class="muted">{{ b.hotelAddress }}</p>
+        <dl class="result__grid">
+          <div><dt>Check-in</dt><dd>{{ b.checkIn | date: 'EEE, d MMM y' }}</dd></div>
+          <div><dt>Check-out</dt><dd>{{ b.checkOut | date: 'EEE, d MMM y' }}</dd></div>
+          <div><dt>Room</dt><dd>{{ b.roomTypeName }} &middot; {{ b.nights }} night{{ b.nights === 1 ? '' : 's' }}</dd></div>
+          <div><dt>Guest</dt><dd>{{ b.guestName }}</dd></div>
+          <div><dt>Total</dt><dd>{{ b.totalAmount | inr }}</dd></div>
+          <div><dt>Booked on</dt><dd>{{ b.createdAt | date: 'd MMM y, h:mm a' }}</dd></div>
+          @if (b.cancelledAt) {
+            <div><dt>Cancelled on</dt><dd>{{ b.cancelledAt | date: 'd MMM y, h:mm a' }}</dd></div>
+          }
+        </dl>
+        <div class="result__actions">
+          @if (b.cancellable) {
+            <button class="btn btn--danger" type="button" (click)="confirmOpen.set(true)">Cancel booking</button>
+          } @else if (b.status === 'CONFIRMED') {
+            <p class="muted small">This stay has started, so it can't be cancelled online. Please contact the hotel.</p>
+          }
+          <a class="btn btn--outline" [routerLink]="['/hotels', b.hotelId]">View hotel</a>
+        </div>
+      </div>
+    </article>
+  }
+</section>
+
+@if (confirmOpen() && booking(); as b) {
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cancel-title" (click)="confirmOpen.set(false)">
+    <div class="modal__box" (click)="$event.stopPropagation()">
+      <h3 id="cancel-title">Cancel this booking?</h3>
+      <p>Your stay at <b>{{ b.hotelName }}</b> from {{ b.checkIn | date: 'd MMM' }} to {{ b.checkOut | date: 'd MMM' }}
+        will be cancelled and the room released to other guests. This can't be undone.</p>
+      <div class="modal__actions">
+        <button class="btn btn--outline" type="button" (click)="confirmOpen.set(false)" [disabled]="cancelling()">Keep booking</button>
+        <button class="btn btn--danger" type="button" (click)="cancel()" [disabled]="cancelling()">
+          @if (cancelling()) { <span class="spinner"></span> Cancelling&hellip; } @else { Yes, cancel it }
+        </button>
+      </div>
+    </div>
+  </div>
+}

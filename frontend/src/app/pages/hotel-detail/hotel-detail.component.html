@@ -1,0 +1,162 @@
+@if (loadError()) {
+  <section class="wrap state">
+    <h2>{{ loadError()!.status === 404 ? "We couldn't find that stay" : 'This stay could not be loaded' }}</h2>
+    <p class="muted">{{ loadError()!.message }}</p>
+    <div class="state__actions">
+      @if (loadError()!.status !== 404) {
+        <button class="btn btn--dark" type="button" (click)="loadHotel()">Try again</button>
+      }
+      <a class="btn btn--outline" routerLink="/hotels">Browse all stays</a>
+    </div>
+  </section>
+}
+
+@if (!hotel() && !loadError()) {
+  <section class="wrap detail-skeleton">
+    <div class="skeleton sk-hero"></div>
+    <div class="skeleton sk-line"></div>
+    <div class="skeleton sk-line short"></div>
+  </section>
+}
+
+@if (hotel(); as h) {
+  <section class="wrap detail">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a><span>/</span>
+      <a routerLink="/hotels" [queryParams]="{ location: h.city }">{{ h.city }}</a><span>/</span>
+      <span>{{ h.name }}</span>
+    </nav>
+
+    <header class="detail__head">
+      <div>
+        <span class="stars">{{ starText() }}</span>
+        <h1>{{ h.name }}</h1>
+        <p class="detail__addr">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          {{ h.address }}
+        </p>
+      </div>
+      <div class="detail__from">
+        <span class="muted">from</span>
+        <b>{{ room()?.pricePerNight | inr }}</b>
+        <span class="muted">per night</span>
+      </div>
+    </header>
+
+    <rs-gallery [images]="h.images.length ? h.images : [h.coverImage]" [name]="h.name"></rs-gallery>
+
+    <div class="detail__grid">
+      <div class="detail__main">
+        <section class="block" rsReveal>
+          <p class="detail__tagline">{{ h.tagline }}</p>
+          <p>{{ h.description }}</p>
+        </section>
+
+        <section class="block" rsReveal>
+          <h2>What's on offer</h2>
+          <ul class="amenities">
+            @for (a of h.amenities; track a; let i = $index) {
+              <li [style.animation-delay.ms]="i * 60">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="a | amenityIcon"/></svg>
+                {{ a }}
+              </li>
+            }
+          </ul>
+        </section>
+
+        @if (room(); as r) {
+          <section class="block" rsReveal>
+            <h2>Your room</h2>
+            <article class="room">
+              <div class="room__info">
+                <h3>{{ r.name }}</h3>
+                <p class="muted">{{ r.description }}</p>
+                <ul class="room__facts">
+                  <li><b>{{ r.maxGuests }}</b> guests</li>
+                  <li><b>{{ r.bedType }}</b></li>
+                  <li><b>{{ r.sizeSqm }}</b> m²</li>
+                  <li><b>{{ r.totalRooms }}</b> rooms in hotel</li>
+                </ul>
+              </div>
+              <div class="room__price">
+                <b>{{ r.pricePerNight | inr }}</b>
+                <span class="muted">per night</span>
+                @if (quote(); as q) {
+                  <span class="badge" [class.badge--ok]="q.availableRooms > 2" [class.badge--low]="q.availableRooms > 0 && q.availableRooms <= 2"
+                        [class.badge--out]="q.availableRooms === 0">
+                    {{ q.availableRooms === 0 ? 'Sold out for your dates' : q.availableRooms + ' left for your dates' }}
+                  </span>
+                }
+              </div>
+            </article>
+          </section>
+        }
+
+        <section class="block" rsReveal>
+          <rs-flex-dates [hotelId]="h.id" [checkIn]="checkIn || null" [checkOut]="checkOut || null"
+                         (choose)="applyRange($event)"></rs-flex-dates>
+        </section>
+      </div>
+
+      <!-- ===== Booking panel ===== -->
+      <aside class="panel" id="booking-panel">
+        <div class="panel__inner">
+          <h3>Reserve your stay</h3>
+          <div class="panel__dates">
+            <div class="field">
+              <label for="d-in">Check-in</label>
+              <input id="d-in" class="input" type="date" [min]="today" [(ngModel)]="checkIn"
+                     (ngModelChange)="onCheckInChange()" />
+            </div>
+            <div class="field">
+              <label for="d-out">Check-out</label>
+              <input id="d-out" class="input" type="date" [min]="minCheckOut()" [(ngModel)]="checkOut"
+                     (ngModelChange)="refreshQuote(true)" />
+            </div>
+          </div>
+
+          @if (dateError()) {
+            <p class="field-error">{{ dateError() }}</p>
+          }
+
+          @if (!checkIn && !checkOut) {
+            <p class="notice notice--info">Pick your dates to see the total price and rooms left.</p>
+          }
+
+          @if (quoting()) {
+            <div class="panel__loading"><span class="spinner"></span> Checking availability&hellip;</div>
+          }
+
+          @if (quote(); as q) {
+            <div class="breakdown">
+              <div class="breakdown__row">
+                <span>{{ q.pricePerNight | inr }} &times; {{ q.nights }} night{{ q.nights === 1 ? '' : 's' }}</span>
+                <span>{{ q.totalAmount | inr }}</span>
+              </div>
+              <div class="breakdown__row muted">
+                <span>{{ q.checkIn | date: 'EEE d MMM' }} &rarr; {{ q.checkOut | date: 'EEE d MMM' }}</span>
+              </div>
+              <div class="breakdown__total">
+                <span>Total</span>
+                <span>{{ q.totalAmount | inr }}</span>
+              </div>
+            </div>
+
+            @if (q.available) {
+              @if (q.availableRooms <= 2) {
+                <p class="hurry">Only {{ q.availableRooms }} room{{ q.availableRooms === 1 ? '' : 's' }} left for these nights</p>
+              }
+              <button class="btn btn--primary btn--block" type="button" (click)="reserve()">Continue to book</button>
+              <p class="panel__small muted">You won't be charged online. Free cancellation until check-in day.</p>
+            } @else {
+              <p class="notice notice--error">No rooms left for every night of this stay.</p>
+              <button class="btn btn--outline btn--block" type="button" (click)="scrollToFlex()">See the closest dates that work</button>
+            }
+          }
+        </div>
+      </aside>
+    </div>
+  </section>
+}
