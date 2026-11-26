@@ -73,7 +73,7 @@ The extra feature is **Flex Dates**. Each hotel page shows how many rooms are le
 ### 1. Clone
 
 ```bash
-git clone https://github.com/<your-username>/roamstead.git
+git clone https://github.com/shivam8264/roamstead.git
 cd roamstead
 ```
 
@@ -91,7 +91,7 @@ macOS / Linux:
 ```bash
 cd backend
 export DB_USERNAME=roamstead_app
-export DB_PASSWORD=change-me
+export DB_PASSWORD=password
 mvn spring-boot:run
 ```
 
